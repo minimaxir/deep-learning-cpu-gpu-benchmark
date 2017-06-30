@@ -23,7 +23,7 @@ class EpochStatsLogger(Callback):
     def on_train_begin(self, logs={}):
         filename = os.path.basename(sys.argv[0])[:-3]
         backend = K.backend()
-        self.f = open('logs/{}_{}.csv'.format(filename, backend), 'w')
+        self.f = open('logs/{}/{}_{}.csv'.format(sys.argv[1], filename, backend), 'w')
         self.log_writer = csv.writer(self.f)
         self.log_writer.writerow(['epoch', 'elapsed', 'loss'])
 
