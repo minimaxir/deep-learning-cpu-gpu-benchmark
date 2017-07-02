@@ -56,6 +56,7 @@ Create a helpfer function to return the results for all permutations of a given 
 ```{r}
 tf_types <- c("cpu-compiled", "cpu-pip")
 tf_platforms <- c("cpu8","cpu16","cpu32","cpu64")
+labels <- c('gpu','cpu64pip', 'cpu64cmp','cpu32pip', 'cpu32cmp','cpu16pip', 'cpu16cmp','cpu8pip', 'cpu8cmp')
 
 
 process_test_data <- function(file_name) {
@@ -86,16 +87,23 @@ process_test_data <- function(file_name) {
   }
   
   # Normalize
-  
   results <- results %>%
               mutate(total_time_norm = total_time / gpu_total_time,
                      total_cost_norm = total_cost / gpu_total_cost)
+  
+  # Format/Factorize labels
+  
+  results <- results %>%
+              mutate(label = paste0(
+                ifelse(platform == "gpu", '', platform),
+                ifelse(type == "cpu-compiled", "cmp", substr(type, nchar(type)-2, nchar(type))))) %>%
+              ungroup() %>%
+              mutate(label= factor(label, levels=labels))
   
   return(results)
   
 }
 
 process_test_data('cifar10_cnn_tensorflow.csv')
-# read_csv(sprintf("../logs/%s/%s/%s", 'cpu-compiled', 'cpu8', 'cifar10_cnn_tensorflow.csv'))
 ```
 
