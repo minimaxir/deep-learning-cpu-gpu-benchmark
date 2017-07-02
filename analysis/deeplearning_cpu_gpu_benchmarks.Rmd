@@ -1,0 +1,101 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(tidyr)
+library(RColorBrewer)
+
+theme_set(theme_minimal(base_size=9, base_family="Source Sans Pro") +
+            theme(plot.title = element_text(size=11, family="Source Sans Pro Bold"),
+                  axis.title.x = element_text(family="Source Sans Pro Semibold"),
+                  axis.title.y = element_text(family="Source Sans Pro Semibold"),
+                  plot.caption = element_text(size=6, color="#969696")))
+
+sessionInfo()
+```
+
+Set colors according to Brewer palettes for consistent lightness. Ignore first color of palettes since it is too bright.
+
+```{r}
+color_gpu <- brewer.pal(5, "Reds")[5]
+colors_pip <- rev(brewer.pal(5, "Blues")[-1])
+colors_compiled <- rev(brewer.pal(5, "Greens")[-1])
+```
+
+Set known price rates from [Google Compute Engine Pricing](https://cloud.google.com/compute/pricing).
+
+```{r}
+gpu_cost_hr <- 0.745
+cpu8_cost_hr <- 0.060
+skylake_premium <- 0.0607
+```
+
+Derive the remaining rates, in seconds.
+
+```{r}
+gpu_cost_s <- gpu_cost_hr / 3600
+cpu8_cost_s <- (cpu8_cost_hr * (1 + skylake_premium)) / 3600
+cpu16_cost_s <- cpu8_cost_s * 2
+cpu32_cost_s <- cpu16_cost_s * 2
+cpu64_cost_s <- cpu32_cost_s * 2
+
+# works like a Python dict
+costs <- c(gpu=gpu_cost_s, cpu8=cpu8_cost_s, cpu16=cpu16_cost_s, cpu32=cpu32_cost_s, cpu64=cpu64_cost_s)
+```
+
+# Analysis
+
+Create a helpfer function to return the results for all permutations of a given test file name.
+
+```{r}
+tf_types <- c("cpu-compiled", "cpu-pip")
+tf_platforms <- c("cpu8","cpu16","cpu32","cpu64")
+
+
+process_test_data <- function(file_name) {
+  results <- read_csv(sprintf("../logs/gpu/%s", file_name)) %>%
+              mutate(type = "gpu", platform = "gpu") %>%
+              group_by(type, platform) %>%
+              summarize(total_time = sum(elapsed),
+                        total_cost = total_time * costs['gpu'])
+  
+  gpu_total_time <- results %>% pull(total_time)
+  gpu_total_cost <- results %>% pull(total_cost)
+  
+  
+  for(tf_type_i in 1:length(tf_types)) {
+    tf_type <- tf_types[tf_type_i]
+    for(tf_platform_i in 1:length(tf_platforms)) {
+      tf_platform <- tf_platforms[tf_platform_i]
+      
+      temp_df <- read_csv(sprintf("../logs/%s/%s/%s", tf_type, tf_platform, file_name)) %>%
+              mutate(type = tf_type, platform = tf_platform) %>%
+              group_by(type, platform) %>%
+              summarize(total_time = sum(elapsed),
+                        total_cost = total_time * costs[tf_platform])
+      
+      results <- results %>% bind_rows(temp_df)
+      
+    }
+  }
+  
+  # Normalize
+  
+  results <- results %>%
+              mutate(total_time_norm = total_time / gpu_total_time,
+                     total_cost_norm = total_cost / gpu_total_cost)
+  
+  return(results)
+  
+}
+
+process_test_data('cifar10_cnn_tensorflow.csv')
+# read_csv(sprintf("../logs/%s/%s/%s", 'cpu-compiled', 'cpu8', 'cifar10_cnn_tensorflow.csv'))
+```
+
