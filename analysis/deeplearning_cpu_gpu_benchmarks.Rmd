@@ -11,14 +11,27 @@ library(scales)
 library(tidyr)
 library(RColorBrewer)
 
-theme_set(theme_minimal(base_size=9, base_family="Source Sans Pro") +
-            theme(plot.title = element_text(size=11, family="Source Sans Pro Bold"),
-                  axis.title.x = element_text(family="Source Sans Pro Semibold"),
-                  axis.title.y = element_text(family="Source Sans Pro Semibold"),
-                  plot.caption = element_text(size=6, color="#969696")))
-
 sessionInfo()
 ```
+
+Set ggplot2 theme.
+
+```{r}
+theme_set(theme_minimal(base_size=9, base_family="Source Sans Pro") +
+            theme(plot.title = element_text(size=11, family="Source Sans Pro Bold"),
+                  axis.title.x = element_blank(),
+                  axis.title.y = element_text(family="Source Sans Pro Semibold"),
+                  plot.caption = element_text(size=6, color="#969696"),
+                  axis.text.x = element_text(angle = 45, vjust = 0.75, size = 7),
+                  legend.position="none"))
+```
+
+```{r}
+relative <- function(x) {
+  lab <- paste0(sprintf("%.2f", x), 'x')
+}
+```
+
 
 Set colors according to Brewer palettes for consistent lightness. Ignore first color of palettes since it is too bright.
 
@@ -26,6 +39,8 @@ Set colors according to Brewer palettes for consistent lightness. Ignore first c
 color_gpu <- brewer.pal(5, "Reds")[5]
 colors_pip <- rev(brewer.pal(5, "Blues")[-1])
 colors_compiled <- rev(brewer.pal(5, "Greens")[-1])
+
+colors_all <- c(color_gpu, colors_pip[1], colors_compiled[1], colors_pip[2], colors_compiled[2], colors_pip[3], colors_compiled[3], colors_pip[4], colors_compiled[4])
 ```
 
 Set known price rates from [Google Compute Engine Pricing](https://cloud.google.com/compute/pricing).
@@ -98,7 +113,8 @@ process_test_data <- function(file_name) {
                 ifelse(platform == "gpu", '', platform),
                 ifelse(type == "cpu-compiled", "cmp", substr(type, nchar(type)-2, nchar(type))))) %>%
               ungroup() %>%
-              mutate(label= factor(label, levels=labels))
+              mutate(label= factor(label, levels=labels)) %>%
+              select(label, total_time, total_cost, total_time_norm, total_cost_norm)
   
   return(results)
   
@@ -107,3 +123,282 @@ process_test_data <- function(file_name) {
 process_test_data('cifar10_cnn_tensorflow.csv')
 ```
 
+## IMDB Bidirectional LSTM
+
+```{r}
+df_imdb_lstm <- process_test_data("imdb_bidirectional_lstm_tensorflow.csv")
+
+df_imdb_lstm
+```
+
+```{r}
+plot <- ggplot(df_imdb_lstm, aes(x=label, y=total_time_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Time on CPUs w/ Bidirectional LSTMs",
+               x = "Platform",
+               y = "Total Model Training Time Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-1.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-1.png)
+
+```{r}
+plot <- ggplot(df_imdb_lstm, aes(x=label, y=total_cost_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Cost on CPUs w/ Bidirectional LSTMs",
+               x = "Platform",
+               y = "Total Model Training Cost Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-2.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-2.png)
+
+## IMDB Fasttext
+
+```{r}
+df_imdb_fasttext <- process_test_data("imdb_fasttext_tensorflow.csv")
+
+df_imdb_fasttext
+```
+
+```{r}
+plot <- ggplot(df_imdb_fasttext, aes(x=label, y=total_time_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Time on CPUs w/ fasttext",
+               x = "Platform",
+               y = "Total Model Training Time Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-3.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-3.png)
+
+```{r}
+plot <- ggplot(df_imdb_fasttext, aes(x=label, y=total_cost_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Cost on CPUs w/ fasttext",
+               x = "Platform",
+               y = "Total Model Training Cost Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-4.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-4.png)
+
+## MNIST MLP
+
+```{r}
+df_mnist_mlp <- process_test_data("mnist_mlp_tensorflow.csv")
+
+df_mnist_mlp
+```
+
+```{r}
+plot <- ggplot(df_mnist_mlp, aes(x=label, y=total_time_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Time on CPUs w/ MLP",
+               x = "Platform",
+               y = "Total Model Training Time Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-5.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-5.png)
+
+```{r}
+plot <- ggplot(df_mnist_mlp, aes(x=label, y=total_cost_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Cost on CPUs w/ MLP",
+               x = "Platform",
+               y = "Total Model Training Cost Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-6.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-6.png)
+
+## MNIST CNN
+
+```{r}
+df_mnist_cnn <- process_test_data("mnist_cnn_tensorflow.csv")
+
+df_mnist_cnn
+```
+
+```{r}
+plot <- ggplot(df_mnist_cnn, aes(x=label, y=total_time_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Time on CPUs w/ CNN",
+               x = "Platform",
+               y = "Total Model Training Time Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-7.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-7.png)
+
+```{r}
+plot <- ggplot(df_mnist_cnn, aes(x=label, y=total_cost_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Cost on CPUs w/ CNN",
+               x = "Platform",
+               y = "Total Model Training Cost Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-8.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-8.png)
+
+## CIFAR10 Deep CNN + MLP
+
+```{r}
+df_cifar10_cnn <- process_test_data("cifar10_cnn_tensorflow.csv")
+
+df_cifar10_cnn
+```
+
+```{r}
+plot <- ggplot(df_cifar10_cnn, aes(x=label, y=total_time_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Time on CPUs w/ Deep CNN + MLP",
+               x = "Platform",
+               y = "Total Model Training Time Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-9.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-9.png)
+
+```{r}
+plot <- ggplot(df_cifar10_cnn, aes(x=label, y=total_cost_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Cost on CPUs w/ Deep CNN + MLP",
+               x = "Platform",
+               y = "Total Model Training Cost Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-10.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-10.png)
+
+## LSTM Text Generation
+
+```{r}
+df_lstm_text <- process_test_data("lstm_text_generation_tensorflow.csv")
+
+df_lstm_text
+```
+
+```{r}
+plot <- ggplot(df_lstm_text, aes(x=label, y=total_time_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Time on CPUs w/ LSTM Text Gen",
+               x = "Platform",
+               y = "Total Model Training Time Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-11.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-11.png)
+
+```{r}
+plot <- ggplot(df_lstm_text, aes(x=label, y=total_cost_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Cost on CPUs w/ LSTM Text Gen",
+               x = "Platform",
+               y = "Total Model Training Cost Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-12.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-12.png)
+
+## Custom Text Generation
+
+```{r}
+df_custom_text <- process_test_data("text_generator_keras_tensorflow.csv")
+
+df_custom_text
+```
+
+```{r}
+plot <- ggplot(df_custom_text, aes(x=label, y=total_time_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Time on CPUs w/ Custom Text Gen",
+               x = "Platform",
+               y = "Total Model Training Time Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-13.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-13.png)
+
+```{r}
+plot <- ggplot(df_custom_text, aes(x=label, y=total_cost_norm, fill=label)) +
+          geom_bar(stat="identity") +
+          geom_hline(yintercept = 1, linetype="dashed", color="#1a1a1a") +
+          scale_y_continuous(labels = relative) +
+          scale_fill_manual(values = colors_all) +
+          labs(title = "Training Cost on CPUs w/ Custom Text Gen",
+               x = "Platform",
+               y = "Total Model Training Cost Relative to GPU",
+               caption = "Max Woolf — minimaxir.com")
+
+ggsave("dl-cpu-gpu-14.png", plot, width=4, height=3)
+```
+
+![](dl-cpu-gpu-14.png)
