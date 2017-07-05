@@ -1,6 +1,6 @@
-# keras-cntk-benchmark
+# deep-learning-cpu-gpu-benchmark
 
-Repository to benchmark the performance of the CNTK backend on Keras vs. the performance of TensorFlow. This R Notebook is the complement to my blog post [Benchmarking CNTK on Keras: is it Better at Deep Learning than TensorFlow?](http://minimaxir.com/2017/06/keras-cntk/).
+Repository to benchmark the performance of Cloud CPUs vs. Cloud GPUs on TensorFlow and Google Compute Engine. This R Notebook is the complement to my blog post [Benchmarking TensorFlow on Cloud CPUs: Cheaper Deep Learning than Cloud GPUs](http://minimaxir.com/2017/07/cpu-or-gpu/).
 
 ## Usage
 
